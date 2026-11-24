@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: anime-frame-quiz
+    runtime: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: ADMIN_KEY
+        generateValue: true
+    # SQLite يُحفظ افتراضيًا في ./data/game.db داخل مجلد المشروع (قرص مؤقت يتوافق مع الخطة المجانية).
+    # البيانات المضافة (الصور والإحصائيات) تُمسح عند كل إعادة نشر/تشغيل على القرص المؤقت.
+    # للحفظ الدائم فقط، بعد إنشاء Persistent Disk (خطة مدفوعة) أزل التعليق عن الأسطر التالية:
+    # disk:
+    #   name: data
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    # ثم أضف في envVars:  - key: DB_PATH   value: /var/data/game.db
