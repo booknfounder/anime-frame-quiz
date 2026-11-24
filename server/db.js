@@ -29,10 +29,29 @@ if (db.prepare('SELECT COUNT(*) c FROM characters').get().c === 0) {
     for (const a of new Set([en,ar,...al].map(norm))) if (a) ia.run(id,a);
   }
 }
+
 export function pool(animes, difficulty) {
   const d = difficulty && difficulty !== 'all';
-  const rows = db.prepare(`SELECT i.id image_id,i.url,c.id cid,c.anime,c.name_en,c.name_ar,c.difficulty FROM images i JOIN characters c ON c.id=i.character_id
-    WHERE c.anime IN (${animes.map(()=>'?').join(',')}) ${d?'AND c.difficulty=?':''}`).all(...animes, ...(d?[difficulty]:[]));
-  const al = db.prepare('SELECT alias FROM aliases WHERE character_id=?');
-  return rows.map(r => ({...r, accepted: al.all(r.cid).map(x=>x.alias)}));
+
+  const rows = db.prepare(`
+    SELECT i.id image_id, i.url, c.id cid, c.anime,
+    c.name_en, c.name_ar, c.difficulty
+    FROM images i
+    JOIN characters c ON c.id = i.character_id
+    WHERE c.anime IN (${animes.map(() => '?').join(',')})
+    ${d ? 'AND c.difficulty = ?' : ''}
+  `).all(...animes, ...(d ? [difficulty] : []));
+
+  const al = db.prepare(
+    'SELECT alias FROM aliases WHERE character_id = ?'
+  );
+
+  return rows.map(r => ({
+    ...r,
+    accepted: [...new Set([
+      r.name_en,
+      r.name_ar,
+      ...al.all(r.cid).map(x => x.alias)
+    ].map(norm).filter(Boolean))]
+  }));
 }
